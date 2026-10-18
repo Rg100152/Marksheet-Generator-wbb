@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WBBSE Madhyamik Marksheet Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts for Blackletter Header, Serif Labels, Printed Data, and Signatures -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Courier+Prime:ital,wght@0,700;1,700&family=EB+Garamond:ital,wght@0,500;0,600;0,700;1,700&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Custom Typography & Certificate Styling */
+    .font-blackletter {
+      font-family: 'UnifrakturMaguntia', serif;
+    }
+    .font-certificate {
+      font-family: 'EB Garamond', 'Times New Roman', Times, serif;
+    }
+    .font-printed {
+      font-family: 'EB Garamond', 'Times New Roman', serif;
+      font-weight: 700;
+      font-style: italic;
+      letter-spacing: 0.03em;
+    }
+    .font-signature {
+      font-family: 'Caveat', cursive;
+    }
+
+    /* Vintage Marksheet Paper & Security Patterns */
+    .marksheet-paper {
+      width: 794px; /* A4 width at 96 DPI */
+      min-height: 1123px; /* A4 height at 96 DPI */
+      background-color: #fbfaf5;
+      background-image: 
+        /* Subtle central pinkish-peach security wave tint */
+        radial-gradient(ellipse 85% 22% at 52% 25%, rgba(235, 185, 175, 0.25) 0%, rgba(235, 185, 175, 0.08) 60%, transparent 100%),
+        /* Bottom security green-yellow horizontal band */
+        linear-gradient(to bottom, 
+          transparent 0%, 
+          transparent 81.5%, 
+          rgba(163, 205, 168, 0.35) 82%, 
+          rgba(225, 218, 150, 0.38) 86%, 
+          rgba(163, 205, 168, 0.28) 91%, 
+          rgba(190, 215, 190, 0.2) 100%
+        ),
+        /* Fine security micro-grid texture */
+        repeating-linear-gradient(45deg, rgba(120, 140, 120, 0.03) 0px, rgba(120, 140, 120, 0.03) 1px, transparent 1px, transparent 4px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+      position: relative;
+      box-sizing: border-box;
+      padding: 18px;
+      color: #1a1a1a;
+      user-select: none;
+    }
+
+    /* Ornamental Guilloche Outer Border */
+    .guilloche-border {
+      border: 14px solid transparent;
+      position: relative;
+      height: 100%;
+      min-height: 1085px;
+      background-clip: padding-box;
+      box-shadow: 
+        inset 0 0 0 1.5px #3f523a,
+        inset 0 0 0 4px #e9ece4,
+        inset 0 0 0 5.5px #3f523a,
+        0 0 0 1.5px #3f523a;
+    }
+
+    /* SVG Pattern Border Overlay */
+    .guilloche-frame {
+      position: absolute;
+      inset: -14px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Table Styles matching WBBSE Marksheet */
+    .wbbse-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1.8px solid #222;
+      background: rgba(255, 255, 255, 0.35);
+    }
+    .wbbse-table th,
+    .wbbse-table td {
+      border: 1px solid #333;
+      padding: 4px 6px;
+      font-size: 12.5px;
+      line-height: 1.15;
+    }
+    .wbbse-table th {
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .grade-scale-table {
+      border-collapse: collapse;
+      border: 1.5px solid #222;
+      width: 100%;
+      font-size: 11.5px;
+      line-height: 1.15;
+    }
+    .grade-scale-table th,
+    .grade-scale-table td {
+      border: 1px solid #333;
+      padding: 2.5px 6px;
+    }
+
+    /* Vintage Photo Filter */
+    .photo-vintage {
+      filter: grayscale(100%) contrast(125%) brightness(103%);
+    }
+
+    /* Strikeout XXX Effect for S/O or D/O and HIS/HER */
+    .strike-xxx {
+      position: relative;
+      display: inline-block;
+      font-weight: 700;
+      letter-spacing: -1px;
+    }
+
+    /* Print Media Query */
+    @media print {
+      body {
+        background: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-wrapper {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+      }
+      .marksheet-paper {
+        box-shadow: none !important;
+        margin: 0 auto !important;
+        width: 210mm !important;
+        height: 297mm !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col lg:flex-row">
+
+  <!-- LEFT PANEL: INTERACTIVE EDITOR (Hidden when printing) -->
+  <aside class="no-print w-full lg:w-[460px] xl:w-[500px] bg-slate-800 border-r border-slate-700 flex flex-col h-auto lg:h-screen lg:sticky lg:top-0 z-20">
+    <!-- Header -->
+    <div class="p-4 bg-slate-900/90 border-b border-slate-700 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-white shadow">
+          WB
+        </div>
+        <div>
+          <h1 class="font-bold text-base text-white leading-tight">Marksheet Generator</h1>
+          <p class="text-xs text-slate-400">WBBSE Madhyamik Pariksha Format</p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button id="resetBtn" title="Reset to Sample Data" class="px-2.5 py-1.5 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md transition">
+          Reset
+        </button>
+        <button id="printBtn" class="px-3.5 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-md shadow flex items-center gap-1.5 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+          Print / Save PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Form Controls (Scrollable) -->
+    <div class="p-4 overflow-y-auto space-y-5 flex-1 text-sm">
+      
+      <!-- Section 1: Certificate Meta & Roll -->
+      <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/80 space-y-3">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400">1. Header & Roll Details</h2>
+        <div class="grid grid-cols-3 gap-2.5">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Serial No.</label>
+            <input type="text" id="in_serialNo" value="K/080095" class="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 text-white focus:border-emerald-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Index No.</label>
+            <input type="text" id="in_indexNo" value="B4-056" class="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 text-white focus:border-emerald-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Exam Year</label>
+            <input type="text" id="in_examYear" value="2009" class="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 text-white focus:border-emerald-500 focus:outline-none" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Roll</label>
+            <input type="text" id="in_roll" value="B07661G" class="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 text-white focus:border-emerald-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">No.</label>
+            <input type="text" id="in_no" value="0532" class="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 text-white focus:border-emerald-500 focus:outline-none" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Candidate Details & Photo -->
+      <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/80 space-y-3">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400">2. Candidate & School Info</h2>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Candidate Name</label>
+            <input type="text" id="in_name" value="SUDIP DHAR" class="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 text-white focus:border-emerald-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Gender / Relation</label>
+            <select id="in_gender" class="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 text-white focus:border-emerald-500 focus:outline-none">
+              <option value="M" selected>Male (S/O & HIS)</option>
+              <option value="F">Female (D/O & HER)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Father's / Guardian's Name</label>
+          <input type="text" id="in_father" value="AMAL DHAR" class="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 text-white focus:border-emerald-500 focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">School Name (Appearing From)</label>
+          <input type="text" id="in_school" value="SINDRANI SABITRI HIGH SCHOOL" class="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 text-white focus:border-emerald-500 focus:outline-none" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Subject Symbols</label>
+            <input type="text" id="in_symbols" value="BFL ESL" class="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 text-white focus:border-emerald-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Student Photo</label>
+            <input type="file" id="in_photo" accept="image/*" class="w-full text-xs text-slate-300 file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-xs file:font-medium file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer" />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" id="in_vintagePhoto" checked class="rounded bg-slate-700 border-slate-600 text-emerald-500 focus:ring-0" />
+            Apply B&W Vintage Scan Filter & Stamp on Photo
+          </label>
+        </div>
+      </div>
+
+      <!-- Section 3: Marks Entry -->
+      <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/80 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400">3. Subject Marks Obtained</h2>
+          <span class="text-[11px] text-slate-400">Auto-computes Total & Grade</span>
+        </div>
+
+        <div class="space-y-2 text-xs">
+          <div class="grid grid-cols-12 gap-1.5 text-slate-400 font-semibold border-b border-slate-700 pb-1">
+            <div class="col-span-6">Subject</div>
+            <div class="col-span-3 text-center">Written</div>
+            <div class="col-span-3 text-center">Oral</div>
+          </div>
+
+          <!-- First Language 1st & 2nd Paper -->
+          <div class="grid grid-cols-12 gap-1.5 items-center">
+            <div class="col-span-6 text-slate-200">1st Lang (1st Paper) <span class="text-slate-500">/90</span></div>
+            <div class="col-span-3">
+              <input type="number" id="m_fl1_w" value="69" min="0" max="90" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+            <div class="col-span-3 row-span-2">
+              <input type="number" id="m_fl_o" value="20" min="0" max="20" title="Combined Oral out of 20" class="w-full bg-slate-800 border border-emerald-600/70 rounded px-2 py-1 text-center text-white" />
+            </div>
+          </div>
+          <div class="grid grid-cols-12 gap-1.5 items-center">
+            <div class="col-span-6 text-slate-200">1st Lang (2nd Paper) <span class="text-slate-500">/90</span></div>
+            <div class="col-span-3">
+              <input type="number" id="m_fl2_w" value="67" min="0" max="90" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+            <div class="col-span-3 text-center text-[10px] text-slate-400">Oral /20 ↑</div>
+          </div>
+
+          <!-- Second Language -->
+          <div class="grid grid-cols-12 gap-1.5 items-center pt-1 border-t border-slate-800">
+            <div class="col-span-6 text-slate-200">Second Language <span class="text-slate-500">(90+10)</span></div>
+            <div class="col-span-3">
+              <input type="number" id="m_sl_w" value="45" min="0" max="90" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+            <div class="col-span-3">
+              <input type="number" id="m_sl_o" value="10" min="0" max="10" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+          </div>
+
+          <!-- Mathematics -->
+          <div class="grid grid-cols-12 gap-1.5 items-center">
+            <div class="col-span-6 text-slate-200">Mathematics <span class="text-slate-500">(90+10)</span></div>
+            <div class="col-span-3">
+              <input type="number" id="m_math_w" value="72" min="0" max="90" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+            <div class="col-span-3">
+              <input type="number" id="m_math_o" value="10" min="0" max="10" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+          </div>
+
+          <!-- Physical Science -->
+          <div class="grid grid-cols-12 gap-1.5 items-center">
+            <div class="col-span-6 text-slate-200">Physical Science <span class="text-slate-500">(90+10)</span></div>
+            <div class="col-span-3">
+              <input type="number" id="m_psc_w" value="80" min="0" max="90" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+            <div class="col-span-3">
+              <input type="number" id="m_psc_o" value="10" min="0" max="10" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+          </div>
+
+          <!-- Life Science -->
+          <div class="grid grid-cols-12 gap-1.5 items-center">
+            <div class="col-span-6 text-slate-200">Life Science <span class="text-slate-500">(90+10)</span></div>
+            <div class="col-span-3">
+              <input type="number" id="m_lsc_w" value="77" min="0" max="90" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+            <div class="col-span-3">
+              <input type="number" id="m_lsc_o" value="10" min="0" max="10" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+          </div>
+
+          <!-- History -->
+          <div class="grid grid-cols-12 gap-1.5 items-center">
+            <div class="col-span-6 text-slate-200">History <span class="text-slate-500">(90+10)</span></div>
+            <div class="col-span-3">
+              <input type="number" id="m_hist_w" value="70" min="0" max="90" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+            <div class="col-span-3">
+              <input type="number" id="m_hist_o" value="10" min="0" max="10" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+          </div>
+
+          <!-- Geography -->
+          <div class="grid grid-cols-12 gap-1.5 items-center">
+            <div class="col-span-6 text-slate-200">Geography <span class="text-slate-500">(90+10)</span></div>
+            <div class="col-span-3">
+              <input type="number" id="m_geo_w" value="75" min="0" max="90" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+            <div class="col-span-3">
+              <input type="number" id="m_geo_o" value="10" min="0" max="10" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+          </div>
+
+          <!-- Optional Elective -->
+          <div class="grid grid-cols-12 gap-1.5 items-center pt-1 border-t border-slate-800">
+            <div class="col-span-6 text-slate-300">Optional Elective <span class="text-slate-500">(Blank if none)</span></div>
+            <div class="col-span-3">
+              <input type="number" id="m_opt_w" value="" placeholder="-" min="0" max="100" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+            <div class="col-span-3">
+              <input type="number" id="m_opt_o" value="" placeholder="-" min="0" max="100" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center text-white" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Result & Signatures -->
+      <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/80 space-y-3">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400">4. Result & Signatories</h2>
+        <div class="grid grid-cols-3 gap-2.5">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Result Status</label>
+            <select id="in_result" class="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 text-white focus:border-emerald-500 focus:outline-none">
+              <option value="P" selected>P (Successful)</option>
+              <option value="Comp.">Comp. (Compartmental)</option>
+              <option value="X">X (Unsuccessful)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Spl. Dy. Secretary</label>
+            <input type="text" id="in_sig1" value="Pradip Ghosh" class="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 text-white focus:border-emerald-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Secretary</label>
+            <input type="text" id="in_sig2" value="Partha Roy" class="w-full bg-slate-800 border border-slate-600 rounded px-2.5 py-1.5 text-white focus:border-emerald-500 focus:outline-none" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- RIGHT PANEL: MARKSHEET CERTIFICATE PREVIEW -->
+  <main class="print-wrapper flex-1 bg-slate-950 p-4 md:p-8 overflow-auto flex justify-center items-start">
+    
+    <!-- Responsive scaling wrapper for smaller screens -->
+    <div class="origin-top scale-[0.43] sm:scale-[0.72] md:scale-[0.88] xl:scale-100 transition-transform">
+      
+      <!-- THE MARKSHEET DOCUMENT -->
+      <div id="marksheet" class="marksheet-paper font-certificate">
+        
+        <!-- Ornamental Guilloche Border Container -->
+        <div class="guilloche-border px-7 py-5 flex flex-col justify-between relative">
+          
+          <!-- SVG Ornamental Lace Frame -->
+          <svg class="guilloche-frame w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="guillochePattern" width="24" height="24" patternUnits="userSpaceOnUse">
+                <rect width="24" height="24" fill="#d9e0d2"/>
+                <circle cx="12" cy="12" r="10" fill="none" stroke="#3b4e36" stroke-width="1.1"/>
+                <circle cx="0" cy="12" r="10" fill="none" stroke="#3b4e36" stroke-width="1.1"/>
+                <circle cx="24" cy="12" r="10" fill="none" stroke="#3b4e36" stroke-width="1.1"/>
+                <circle cx="12" cy="0" r="10" fill="none" stroke="#3b4e36" stroke-width="1.1"/>
+                <circle cx="12" cy="24" r="10" fill="none" stroke="#3b4e36" stroke-width="1.1"/>
+                <circle cx="12" cy="12" r="4" fill="none" stroke="#53684d" stroke-width="0.9"/>
+              </pattern>
+            </defs>
+            <!-- Top, Bottom, Left, Right patterned bars -->
+            <rect x="0" y="0" width="100%" height="14" fill="url(#guillochePattern)" />
+            <rect x="0" y="100%" width="100%" height="14" transform="translate(0, -14)" fill="url(#guillochePattern)" />
+            <rect x="0" y="0" width="14" height="100%" fill="url(#guillochePattern)" />
+            <rect x="100%" y="0" width="14" height="100%" transform="translate(-14, 0)" fill="url(#guillochePattern)" />
+          </svg>
+
+          <!-- TOP SECTION -->
+          <div>
+            <!-- Serial No and Index No Row -->
+            <div class="flex justify-between items-center text-[13px] mb-1">
+              <div>
+                <span class="font-semibold">NO.</span>
+                <span id="out_serialNo" class="font-printed text-[15px] ml-3">K/080095</span>
+              </div>
+              <div>
+                <span class="font-semibold">INDEX NO.</span>
+                <span id="out_indexNo" class="font-printed text-[15px] ml-4 mr-2">B4-056</span>
+              </div>
+            </div>
+
+            <!-- Arched Old English Title + Emblem -->
+            <div class="relative w-full h-[128px] -mt-2">
+              <svg viewBox="0 0 700 135" class="w-full h-full overflow-visible">
+                <defs>
+                  <!-- Arch Path matching original curve -->
+                  <path id="boardArch" d="M 18,122 Q 350,-22 682,122" />
+                </defs>
+                <!-- Drop shadow stroke for vintage engraved look -->
+                <text class="font-blackletter" font-size="33.5" fill="none" stroke="#7b8676" stroke-width="1.8" transform="translate(1.5, 1.5)">
+                  <textPath href="#boardArch" startOffset="50%" text-anchor="middle">
+                    West Bengal Board Of Secondary Education
+                  </textPath>
+                </text>
+                <text class="font-blackletter" font-size="33.5" fill="#1f241f">
+                  <textPath href="#boardArch" startOffset="50%" text-anchor="middle">
+                    West Bengal Board Of Secondary Education
+                  </textPath>
+                </text>
+              </svg>
+
+              <!-- Central Board Emblem -->
+              <div class="absolute left-1/2 top-[44px] -translate-x-1/2 flex flex-col items-center">
+                <svg width="64" height="64" viewBox="0 0 100 100" class="text-[#1f241f]">
+                  <circle cx="50" cy="50" r="46" fill="#fbfaf5" stroke="currentColor" stroke-width="2.5"/>
+                  <circle cx="50" cy="50" r="41" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3,2"/>
+                  <circle cx="50" cy="50" r="29" fill="none" stroke="currentColor" stroke-width="2"/>
+                  <!-- Inner Lamp / Pillar Motif -->
+                  <path d="M50 25 L56 42 L44 42 Z" fill="currentColor"/>
+                  <rect x="47" y="42" width="6" height="22" fill="currentColor"/>
+                  <path d="M36 64 L64 64 L60 71 L40 71 Z" fill="currentColor"/>
+                  <path d="M35 48 Q50 38 65 48" fill="none" stroke="currentColor" stroke-width="2"/>
+                  <!-- Decorative motto dots along ring -->
+                  <circle cx="50" cy="15" r="1.8" fill="currentColor"/>
+                  <circle cx="25" cy="25" r="1.8" fill="currentColor"/>
+                  <circle cx="75" cy="25" r="1.8" fill="currentColor"/>
+                  <circle cx="15" cy="50" r="1.8" fill="currentColor"/>
+                  <circle cx="85" cy="50" r="1.8" fill="currentColor"/>
+                  <circle cx="28" cy="77" r="1.8" fill="currentColor"/>
+                  <circle cx="72" cy="77" r="1.8" fill="currentColor"/>
+                  <circle cx="50" cy="85" r="1.8" fill="currentColor"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Sub-Header: MARK SHEET OF MADHYAMIK PARIKSHA -->
+            <div class="text-center -mt-1">
+              <div class="text-[14.5px] font-bold tracking-wide">
+                MARK SHEET OF MADHYAMIK PARIKSHA
+              </div>
+              <div class="text-[14px] font-bold tracking-wide">
+                (SECONDARY EXAMINATION) <span id="out_examYear">2009</span>
+              </div>
+            </div>
+
+            <!-- Roll, No, and Candidate Photo Section -->
+            <div class="relative mt-3 flex justify-center items-center">
+              <!-- Roll & No Boxes -->
+              <div class="flex items-center gap-5 mr-10">
+                <div class="flex items-center gap-2.5">
+                  <span class="text-[13px] font-bold">ROLL</span>
+                  <div class="border-[1.6px] border-neutral-800 px-4 py-1 min-w-[105px] text-center">
+                    <span id="out_roll" class="font-printed text-[15px]">B07661G</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2.5">
+                  <span class="text-[13px] font-bold">NO.</span>
+                  <div class="border-[1.6px] border-neutral-800 px-4 py-1 min-w-[95px] text-center">
+                    <span id="out_no" class="font-printed text-[15px]">0532</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Candidate Photograph (Top Right) -->
+              <div class="absolute right-1 -top-3 w-[96px] h-[116px] border border-neutral-700 bg-neutral-100 overflow-hidden shadow-sm">
+                <img id="out_photo" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 145'><defs><radialGradient id='g' cx='50%' cy='40%' r='65%'><stop offset='0%' stop-color='%23e5e5e5'/><stop offset='100%' stop-color='%23888'/></radialGradient></defs><rect width='120' height='145' fill='url(%23g)'/><path d='M18 145 C18 108 102 108 102 145 Z' fill='%23f5f5f5' stroke='%23333' stroke-width='2'/><path d='M42 115 L60 136 L78 115' fill='none' stroke='%23333' stroke-width='2'/><ellipse cx='60' cy='64' rx='26' ry='32' fill='%23f0f0f0' stroke='%23222' stroke-width='2'/><path d='M34 55 C34 26 86 26 86 55 C82 38 38 38 34 55 Z' fill='%23222'/><circle cx='49' cy='62' r='3' fill='%23222'/><circle cx='71' cy='62' r='3' fill='%23222'/><path d='M45 54 Q49 51 54 54' fill='none' stroke='%23222' stroke-width='1.8'/><path d='M66 54 Q71 51 75 54' fill='none' stroke='%23222' stroke-width='1.8'/><path d='M60 62 L57 74 L63 74' fill='none' stroke='%23222' stroke-width='1.6'/><path d='M51 83 Q60 87 69 83' fill='none' stroke='%23222' stroke-width='1.8'/></svg>" alt="Student" class="w-full h-full object-cover photo-vintage" />
+                <!-- Authentic Board Stamp Overlay on Photo -->
+                <div id="out_photoStamp" class="absolute bottom-2 left-0 right-0 pointer-events-none opacity-75">
+                  <div class="border-y border-neutral-800/80 bg-white/40 text-[7px] font-mono font-bold text-center tracking-tighter text-neutral-900 py-0.5 rotate-[-4deg]">
+                    W.B.B.S.E. AUTHENTICATED
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Candidate Biographical Lines -->
+            <div class="mt-7 space-y-2 text-[13.5px] pr-[110px]">
+              <div class="flex items-baseline">
+                <span class="font-bold w-[68px]">NAME</span>
+                <span id="out_name" class="font-printed text-[15.5px] uppercase">SUDIP DHAR</span>
+              </div>
+              <div class="flex items-baseline">
+                <span class="font-bold mr-4">
+                  <span id="out_relPrefix">S / <span class="strike-xxx">XXXXX</span> OF</span>
+                </span>
+                <span id="out_father" class="font-printed text-[15.5px] uppercase">AMAL DHAR</span>
+              </div>
+              <div class="flex items-baseline">
+                <span class="font-bold mr-5">APPEARING FROM</span>
+                <span id="out_school" class="font-printed text-[15.5px] uppercase">SINDRANI SABITRI HIGH SCHOOL</span>
+              </div>
+              <div class="flex items-baseline">
+                <span class="font-bold mr-6">
+                  <span id="out_hisHer">HIS / <span class="strike-xxx">XXX</span></span> COMBINATION OF SUBJECTS (IN SYMBOLS)
+                </span>
+                <span id="out_symbols" class="font-printed text-[15.5px] uppercase">BFL &nbsp; ESL</span>
+              </div>
+            </div>
+
+            <!-- MAIN MARKS TABLE -->
+            <div class="mt-3">
+              <table class="wbbse-table">
+                <thead>
+                  <tr class="text-center text-[13.5px]">
+                    <th class="w-[30%] py-1.5">SUBJECT</th>
+                    <th colspan="3" class="w-[30%] py-1.5">FULL MARKS</th>
+                    <th colspan="4" class="w-[40%] py-1.5">MARKS OBTAINED</th>
+                  </tr>
+                  <tr class="text-center text-[12px]">
+                    <th class="text-left pl-2 font-bold">COMPULSORY SUBJECTS</th>
+                    <th class="w-[10%]">WRITTEN</th>
+                    <th class="w-[10%]">ORAL</th>
+                    <th class="w-[10%]">TOTAL</th>
+                    <th class="w-[10%]">WRITTEN</th>
+                    <th class="w-[10%]">ORAL</th>
+                    <th class="w-[10%]">TOTAL</th>
+                    <th class="w-[10%]">GRADE</th>
+                  </tr>
+                </thead>
+                <tbody class="text-[12.5px]">
+                  <!-- First Language 1st Paper -->
+                  <tr class="h-[29px]">
+                    <td class="pl-2 font-semibold text-[11.5px]">FIRST LANGUAGE - (1ST PAPER)</td>
+                    <td class="text-center font-bold">90</td>
+                    <td rowspan="2" class="text-center font-bold align-middle">20</td>
+                    <td rowspan="2" class="text-center font-bold align-middle">200</td>
+                    <td id="t_fl1_w" class="text-center font-printed text-[15px]">69</td>
+                    <td id="t_fl_o" rowspan="2" class="text-center font-printed text-[15px] align-middle">20</td>
+                    <td id="t_fl_tot" rowspan="2" class="text-center font-printed text-[15px] align-middle">156</td>
+                    <td id="t_fl_grd" rowspan="2" class="text-center font-printed text-[15px] align-middle">A</td>
+                  </tr>
+                  <!-- First Language 2nd Paper -->
+                  <tr class="h-[29px]">
+                    <td class="pl-2 font-semibold text-[11.5px]">FIRST LANGUAGE - (2ND PAPER)</td>
+                    <td class="text-center font-bold">90</td>
+                    <td id="t_fl2_w" class="text-center font-printed text-[15px]">67</td>
+                  </tr>
+
+                  <!-- Second Language -->
+                  <tr class="h-[31px]">
+                    <td class="pl-2 font-semibold">SECOND LANGUAGE</td>
+                    <td class="text-center font-bold">90</td>
+                    <td class="text-center font-bold">10</td>
+                    <td class="text-center font-bold">100</td>
+                    <td id="t_sl_w" class="text-center font-printed text-[15px]">45</td>
+                    <td id="t_sl_o" class="text-center font-printed text-[15px]">10</td>
+                    <td id="t_sl_tot" class="text-center font-printed text-[15px]">55</td>
+                    <td id="t_sl_grd" class="text-center font-printed text-[15px]">B+</td>
+                  </tr>
+
+                  <!-- Mathematics -->
+                  <tr class="h-[31px]">
+                    <td class="pl-2 font-semibold">MATHEMATICS</td>
+                    <td class="text-center font-bold">90</td>
+                    <td class="text-center font-bold">10</td>
+                    <td class="text-center font-bold">100</td>
+                    <td id="t_math_w" class="text-center font-printed text-[15px]">72</td>
+                    <td id="t_math_o" class="text-center font-printed text-[15px]">10</td>
+                    <td id="t_math_tot" class="text-center font-printed text-[15px]">82</td>
+                    <td id="t_math_grd" class="text-center font-printed text-[15px]">A+</td>
+                  </tr>
+
+                  <!-- Physical Science -->
+                  <tr class="h-[31px]">
+                    <td class="pl-2 font-semibold">PHYSICAL SCIENCE</td>
+                    <td class="text-center font-bold">90</td>
+                    <td class="text-center font-bold">10</td>
+                    <td class="text-center font-bold">100</td>
+                    <td id="t_psc_w" class="text-center font-printed text-[15px]">80</td>
+                    <td id="t_psc_o" class="text-center font-printed text-[15px]">10</td>
+                    <td id="t_psc_tot" class="text-center font-printed text-[15px]">90</td>
+                    <td id="t_psc_grd" class="text-center font-printed text-[15px]">AA</td>
+                  </tr>
+
+                  <!-- Life Science -->
+                  <tr class="h-[31px]">
+                    <td class="pl-2 font-semibold">LIFE SCIENCE</td>
+                    <td class="text-center font-bold">90</td>
+                    <td class="text-center font-bold">10</td>
+                    <td class="text-center font-bold">100</td>
+                    <td id="t_lsc_w" class="text-center font-printed text-[15px]">77</td>
+                    <td id="t_lsc_o" class="text-center font-printed text-[15px]">10</td>
+                    <td id="t_lsc_tot" class="text-center font-printed text-[15px]">87</td>
+                    <td id="t_lsc_grd" class="text-center font-printed text-[15px]">A+</td>
+                  </tr>
+
+                  <!-- History -->
+                  <tr class="h-[31px]">
+                    <td class="pl-2 font-semibold">HISTORY</td>
+                    <td class="text-center font-bold">90</td>
+                    <td class="text-center font-bold">10</td>
+                    <td class="text-center font-bold">100</td>
+                    <td id="t_hist_w" class="text-center font-printed text-[15px]">70</td>
+                    <td id="t_hist_o" class="text-center font-printed text-[15px]">10</td>
+                    <td id="t_hist_tot" class="text-center font-printed text-[15px]">80</td>
+                    <td id="t_hist_grd" class="text-center font-printed text-[15px]">A+</td>
+                  </tr>
+
+                  <!-- Geography -->
+                  <tr class="h-[31px]">
+                    <td class="pl-2 font-semibold">GEOGRAPHY</td>
+                    <td class="text-center font-bold">90</td>
+                    <td class="text-center font-bold">10</td>
+                    <td class="text-center font-bold">100</td>
+                    <td id="t_geo_w" class="text-center font-printed text-[15px]">75</td>
+                    <td id="t_geo_o" class="text-center font-printed text-[15px]">10</td>
+                    <td id="t_geo_tot" class="text-center font-printed text-[15px]">85</td>
+                    <td id="t_geo_grd" class="text-center font-printed text-[15px]">A+</td>
+                  </tr>
+
+                  <!-- Optional Elective Subject -->
+                  <tr class="h-[31px]">
+                    <td class="pl-2 font-semibold">OPTIONAL ELECTIVE SUBJECT</td>
+                    <td class="text-center font-bold"></td>
+                    <td class="text-center font-bold"></td>
+                    <td class="text-center font-bold">100</td>
+                    <td id="t_opt_w" class="text-center font-printed text-[15px]"></td>
+                    <td id="t_opt_o" class="text-center font-printed text-[15px]"></td>
+                    <td id="t_opt_tot" class="text-center font-printed text-[15px]"></td>
+                    <td id="t_opt_grd" class="text-center font-printed text-[15px]"></td>
+                  </tr>
+
+                  <!-- Result Row -->
+                  <tr class="h-[31px]">
+                    <td colspan="8" class="pl-2 font-bold text-[13px]">
+                      <div class="flex items-center gap-3">
+                        <span>RESULT</span>
+                        <span class="text-base leading-none">&#10230;</span>
+                        <span id="out_result" class="font-printed text-[16px] ml-4">P</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- BOTTOM TABLES: GRADE SCALE (LEFT) & RESULT LEGEND (RIGHT) -->
+            <div class="mt-4 flex justify-between items-start gap-6">
+              <!-- Left: Grade Scale Table -->
+              <div class="w-[50%]">
+                <table class="grade-scale-table">
+                  <thead>
+                    <tr class="text-left font-bold">
+                      <th class="w-[31%]">Grade Scale</th>
+                      <th class="w-[21%] text-center">Grade</th>
+                      <th class="w-[48%]">Performance Indicator</th>
+                    </tr>
+                  </thead>
+                  <tbody class="font-semibold">
+                    <tr>
+                      <td>90-100</td>
+                      <td class="text-center">AA</td>
+                      <td>Outstanding</td>
+                    </tr>
+                    <tr>
+                      <td>80-89</td>
+                      <td class="text-center">A+</td>
+                      <td>Excellent</td>
+                    </tr>
+                    <tr>
+                      <td>60-79</td>
+                      <td class="text-center">A</td>
+                      <td>Very Good</td>
+                    </tr>
+                    <tr>
+                      <td>45-59</td>
+                      <td class="text-center">B+</td>
+                      <td>Good</td>
+                    </tr>
+                    <tr>
+                      <td>35-44</td>
+                      <td class="text-center">B</td>
+                      <td>Satisfactory</td>
+                    </tr>
+                    <tr>
+                      <td>25-34</td>
+                      <td class="text-center">C</td>
+                      <td>Marginal</td>
+                    </tr>
+                    <tr>
+                      <td>Below 25</td>
+                      <td class="text-center">D</td>
+                      <td>Disqualified</td>
+                    </tr>
+                    <tr>
+                      <td colspan="3" class="text-[11px] font-bold py-1">
+                        Grade in FL is determined on the basis of <span class="italic">Total Marks/2</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Right: Result Key Box -->
+              <div class="w-[44%] pr-4">
+                <div class="text-center font-bold text-[12px] mb-1">RESULT :</div>
+                <div class="border-[1.5px] border-neutral-800 px-3 py-1.5 text-[12px] font-semibold leading-snug">
+                  <div class="flex">
+                    <span class="w-14 font-bold">P</span>
+                    <span>For Successful Candidate</span>
+                  </div>
+                  <div class="flex">
+                    <span class="w-14 font-bold">Comp.</span>
+                    <span>For Compartmental Candidate</span>
+                  </div>
+                  <div class="flex">
+                    <span class="w-14 font-bold">X</span>
+                    <span>For unsuccessful Candidate</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- FOOTER SIGNATURES -->
+          <div class="mt-6 pt-2 flex justify-between items-end px-8 pb-1">
+            <!-- Left Signature -->
+            <div class="text-center">
+              <div id="out_sig1" class="font-signature text-[28px] leading-none text-neutral-900 mb-0.5">
+                Pradip Ghosh
+              </div>
+              <div class="text-[11.5px] font-bold tracking-tight">
+                Spl. Deputy Secretary (Exam.)
+              </div>
+            </div>
+
+            <!-- Right Signature -->
+            <div class="text-center pr-6">
+              <div id="out_sig2" class="font-signature text-[28px] leading-none text-neutral-900 mb-0.5">
+                Partha Roy
+              </div>
+              <div class="text-[11.5px] font-bold tracking-tight">
+                Secretary
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- APPLICATION LOGIC -->
+  <script>
+    // Calculate WBBSE Grade from percentage / 100-point score
+    function calculateGrade(scoreOutOf100) {
+      if (scoreOutOf100 === null || isNaN(scoreOutOf100)) return '';
+      const s = Math.floor(scoreOutOf100);
+      if (s >= 90) return 'AA';
+      if (s >= 80) return 'A+';
+      if (s >= 60) return 'A';
+      if (s >= 45) return 'B+';
+      if (s >= 35) return 'B';
+      if (s >= 25) return 'C';
+      return 'D';
+    }
+
+    // Read integer or return null if empty
+    function getNum(id) {
+      const val = document.getElementById(id).value.trim();
+      if (val === '') return null;
+      const n = parseInt(val, 10);
+      return isNaN(n) ? null : n;
+    }
+
+    // Synchronize all inputs with the Marksheet Preview
+    function updateMarksheet() {
+      // 1. Header & Roll
+      document.getElementById('out_serialNo').textContent = document.getElementById('in_serialNo').value;
+      document.getElementById('out_indexNo').textContent = document.getElementById('in_indexNo').value;
+      document.getElementById('out_examYear').textContent = document.getElementById('in_examYear').value;
+      document.getElementById('out_roll').textContent = document.getElementById('in_roll').value;
+      document.getElementById('out_no').textContent = document.getElementById('in_no').value;
+
+      // 2. Candidate Info & Gender Strikeouts
+      document.getElementById('out_name').textContent = document.getElementById('in_name').value;
+      document.getElementById('out_father').textContent = document.getElementById('in_father').value;
+      document.getElementById('out_school').textContent = document.getElementById('in_school').value;
+      document.getElementById('out_symbols').textContent = document.getElementById('in_symbols').value;
+
+      const gender = document.getElementById('in_gender').value;
+      const relPrefix = document.getElementById('out_relPrefix');
+      const hisHer = document.getElementById('out_hisHer');
+
+      if (gender === 'M') {
+        relPrefix.innerHTML = 'S / <span class="strike-xxx">XXXXX</span> OF';
+        hisHer.innerHTML = 'HIS / <span class="strike-xxx">XXX</span>';
+      } else {
+        relPrefix.innerHTML = '<span class="strike-xxx">XXX</span> / D OF';
+        hisHer.innerHTML = '<span class="strike-xxx">XXX</span> / HER';
+      }
+
+      // 3. First Language Calculation (Out of 200; Grade based on Total/2)
+      const fl1W = getNum('m_fl1_w');
+      const fl2W = getNum('m_fl2_w');
+      const flO  = getNum('m_fl_o');
+
+      document.getElementById('t_fl1_w').textContent = fl1W !== null ? fl1W : '';
+      document.getElementById('t_fl2_w').textContent = fl2W !== null ? fl2W : '';
+      document.getElementById('t_fl_o').textContent  = flO !== null ? flO : '';
+
+      if (fl1W !== null || fl2W !== null || flO !== null) {
+        const flTotal = (fl1W || 0) + (fl2W || 0) + (flO || 0);
+        document.getElementById('t_fl_tot').textContent = flTotal;
+        document.getElementById('t_fl_grd').textContent = calculateGrade(flTotal / 2);
+      } else {
+        document.getElementById('t_fl_tot').textContent = '';
+        document.getElementById('t_fl_grd').textContent = '';
+      }
+
+      // 4. Standard 100-mark Subjects
+      const subjects = ['sl', 'math', 'psc', 'lsc', 'hist', 'geo', 'opt'];
+      subjects.forEach(sub => {
+        const w = getNum(`m_${sub}_w`);
+        const o = getNum(`m_${sub}_o`);
+
+        document.getElementById(`t_${sub}_w`).textContent = w !== null ? w : '';
+        document.getElementById(`t_${sub}_o`).textContent = o !== null ? o : '';
+
+        if (w !== null || o !== null) {
+          const tot = (w || 0) + (o || 0);
+          document.getElementById(`t_${sub}_tot`).textContent = tot;
+          document.getElementById(`t_${sub}_grd`).textContent = calculateGrade(tot);
+        } else {
+          document.getElementById(`t_${sub}_tot`).textContent = '';
+          document.getElementById(`t_${sub}_grd`).textContent = '';
+        }
+      });
+
+      // 5. Result & Signatures
+      document.getElementById('out_result').textContent = document.getElementById('in_result').value;
+      document.getElementById('out_sig1').textContent = document.getElementById('in_sig1').value;
+      document.getElementById('out_sig2').textContent = document.getElementById('in_sig2').value;
+
+      // 6. Photo Vintage Filter Toggle
+      const isVintage = document.getElementById('in_vintagePhoto').checked;
+      const photoEl = document.getElementById('out_photo');
+      const stampEl = document.getElementById('out_photoStamp');
+      if (isVintage) {
+        photoEl.classList.add('photo-vintage');
+        stampEl.classList.remove('hidden');
+      } else {
+        photoEl.classList.remove('photo-vintage');
+        stampEl.classList.add('hidden');
+      }
+    }
+
+    // Handle Student Photo Upload
+    document.getElementById('in_photo').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        document.getElementById('out_photo').src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Attach live input listeners
+    document.querySelectorAll('input, select').forEach(el => {
+      if (el.id !== 'in_photo') {
+        el.addEventListener('input', updateMarksheet);
+        el.addEventListener('change', updateMarksheet);
+      }
+    });
+
+    // Print / Download PDF Button
+    document.getElementById('printBtn').addEventListener('click', () => {
+      window.print();
+    });
+
+    // Reset Button (Restores exact values from the uploaded sample image)
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      document.getElementById('in_serialNo').value = 'K/080095';
+      document.getElementById('in_indexNo').value = 'B4-056';
+      document.getElementById('in_examYear').value = '2009';
+      document.getElementById('in_roll').value = 'B07661G';
+      document.getElementById('in_no').value = '0532';
+      document.getElementById('in_name').value = 'SUDIP DHAR';
+      document.getElementById('in_gender').value = 'M';
+      document.getElementById('in_father').value = 'AMAL DHAR';
+      document.getElementById('in_school').value = 'SINDRANI SABITRI HIGH SCHOOL';
+      document.getElementById('in_symbols').value = 'BFL ESL';
+
+      document.getElementById('m_fl1_w').value = '69';
+      document.getElementById('m_fl2_w').value = '67';
+      document.getElementById('m_fl_o').value = '20';
+
+      document.getElementById('m_sl_w').value = '45';
+      document.getElementById('m_sl_o').value = '10';
+
+      document.getElementById('m_math_w').value = '72';
+      document.getElementById('m_math_o').value = '10';
+
+      document.getElementById('m_psc_w').value = '80';
+      document.getElementById('m_psc_o').value = '10';
+
+      document.getElementById('m_lsc_w').value = '77';
+      document.getElementById('m_lsc_o').value = '10';
+
+      document.getElementById('m_hist_w').value = '70';
+      document.getElementById('m_hist_o').value = '10';
+
+      document.getElementById('m_geo_w').value = '75';
+      document.getElementById('m_geo_o').value = '10';
+
+      document.getElementById('m_opt_w').value = '';
+      document.getElementById('m_opt_o').value = '';
+
+      document.getElementById('in_result').value = 'P';
+      document.getElementById('in_sig1').value = 'Pradip Ghosh';
+      document.getElementById('in_sig2').value = 'Partha Roy';
+      document.getElementById('in_vintagePhoto').checked = true;
+
+      updateMarksheet();
+    });
+
+    // Initial render
+    window.onload = updateMarksheet;
+  </script>
+</body>
+</html>
